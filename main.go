@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"openweather-api-http-server-example/alert"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -49,10 +50,38 @@ func getCurrentWeather(c *gin.Context) {
 
 	// NOTE:The *free* OpenWeather API endpoint for current weather does not include alerts
 	// TODO: source from NWS free open api if time allows
+	activeAlertsData, err := fetchActiveAlertsData(coords.Lat, coords.Lon)
+	validActiveAlerts := alert.ProcessNWSActiveAlertResponse(activeAlertsData)
+
 	c.JSON(http.StatusOK, gin.H{
 		"condition":        condition,
 		"temperature_feel": temperatureFeel,
+		"activeAlerts":     validActiveAlerts,
 	})
+}
+
+func fetchActiveAlertsData(lat string, lon string) (*alert.NWSActiveAlertsResponse, error) {
+	client := resty.New()
+	resp, err := client.R().
+		SetQueryParam("point", fmt.Sprintf("%s,%s", lat, lon)).
+		SetDebug(true).
+		Get("https://api.weather.gov/alerts/active")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch Active Alerts data: %s", resp.Status())
+	}
+
+	var activeAlertsData alert.NWSActiveAlertsResponse
+	if err := json.Unmarshal(resp.Body(), &activeAlertsData); err != nil {
+		log.Print("Unable to unmarshal Active Alerts response body: ", resp.Body())
+		return nil, err
+	}
+
+	return &activeAlertsData, nil
 }
 
 func fetchCurrentWeatherData(lat string, lon string) (*CurrentWeatherResponse, error) {
