@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/BHunter2889/weather-api-http-server-example/alert"
 	"log"
 	"net/http"
-	"openweather-api-http-server-example/alert"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +51,10 @@ func getCurrentWeather(c *gin.Context) {
 	// NOTE:The *free* OpenWeather API endpoint for current weather does not include alerts
 	// TODO: source from NWS free open api if time allows
 	activeAlertsData, err := fetchActiveAlertsData(coords.Lat, coords.Lon)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	validActiveAlerts := alert.ProcessNWSActiveAlertResponse(activeAlertsData)
 
 	c.JSON(http.StatusOK, gin.H{

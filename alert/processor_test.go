@@ -2,7 +2,8 @@ package alert_test
 
 import (
 	"fmt"
-	"openweather-api-http-server-example/alert"
+	"github.com/BHunter2889/weather-api-http-server-example/alert"
+
 	"testing"
 	"time"
 )
